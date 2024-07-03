@@ -1,18 +1,44 @@
 import { test, expect } from "@playwright/test";
+import { createDatabase } from "db0";
+import sqlite from "db0/connectors/better-sqlite3";
 
 test.describe("POST /api/[name]", () => {
   const body = {
     name: "John",
   };
 
-  test("accepts the user", async ({ request }) => {
+  const db = createDatabase(sqlite({}));
+
+  test.beforeEach(async () => {
+    await db.sql`drop table if exists names`;
+    await db.sql`create table if not exists names ("id" integer primary key asc, "name" text)`;
+  });
+
+  test("save user in database", async ({ request }) => {
+    await request.post(`/api`, { data: body });
+
+    const names = await db.sql`select * from names where name = ${body.name}`;
+
+    expect(names.rows.length).toBe(1);
+  });
+
+  test("return 204 no content", async ({ request }) => {
     const response = await request.post(`/api`, { data: body });
 
     expect(response.statusText()).toBe("No Content");
     expect(response.status()).toBe(204);
   });
 
-  test("throws an error if the name is missing", async ({ request }) => {
+  test("cannot save the same user twice", async ({ request }) => {
+    await request.post(`/api`, { data: body });
+
+    const response = await request.post(`/api`, { data: body });
+
+    expect(response.statusText()).toBe("Conflict");
+    expect(response.status()).toBe(409);
+  });
+
+  test("cannot save user without name", async ({ request }) => {
     const response = await request.post(`/api`, { data: {} });
 
     expect(response.statusText()).toBe("Bad Request");

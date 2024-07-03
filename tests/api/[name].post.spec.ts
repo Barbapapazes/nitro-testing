@@ -14,7 +14,7 @@ test.describe("POST /api/[name]", () => {
     await db.sql`create table if not exists names ("id" integer primary key asc, "name" text)`;
   });
 
-  test("save user in database", async ({ request }) => {
+  test("saves user in database", async ({ request }) => {
     await request.post(`/api`, { data: body });
 
     const names = await db.sql`select * from names where name = ${body.name}`;
@@ -22,14 +22,14 @@ test.describe("POST /api/[name]", () => {
     expect(names.rows.length).toBe(1);
   });
 
-  test("return 204 no content", async ({ request }) => {
+  test("returns 204 no content", async ({ request }) => {
     const response = await request.post(`/api`, { data: body });
 
     expect(response.statusText()).toBe("No Content");
     expect(response.status()).toBe(204);
   });
 
-  test("cannot save the same user twice", async ({ request }) => {
+  test("can not save the same user twice", async ({ request }) => {
     await request.post(`/api`, { data: body });
 
     const response = await request.post(`/api`, { data: body });
@@ -38,7 +38,7 @@ test.describe("POST /api/[name]", () => {
     expect(response.status()).toBe(409);
   });
 
-  test("cannot save user without name", async ({ request }) => {
+  test("can not save user without name", async ({ request }) => {
     const response = await request.post(`/api`, { data: {} });
 
     expect(response.statusText()).toBe("Bad Request");
